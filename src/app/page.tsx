@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { daysUntil, fmtDate, todayLong, weekday } from "@/lib/dates";
-import { AREA_LABELS, type EnemDates, type Exam, type Grade, type SubjectWithTopics } from "@/lib/types";
+import { AREA_LABELS, ORIGIN_LABELS, type EnemDates, type Exam, type Grade, type SubjectWithTopics } from "@/lib/types";
 
 const DEFAULT_ENEM: EnemDates = { day1: "2026-11-08", day2: "2026-11-15" };
 
@@ -160,7 +160,9 @@ export default function DashboardPage() {
               <div key={s.id} className="flex items-center justify-between px-4 py-3">
                 <div>
                   <p className="text-sm font-medium text-neutral-800">{s.name}</p>
-                  <p className="text-xs text-neutral-400">{AREA_LABELS[s.area]}</p>
+                  <p className="text-xs text-neutral-400">
+                    {ORIGIN_LABELS[s.origin]} · {AREA_LABELS[s.area]}
+                  </p>
                 </div>
                 <span className="rounded-full bg-amber-50 px-2.5 py-0.5 font-mono text-xs font-semibold text-amber-700">
                   {s.open} pendente{s.open === 1 ? "" : "s"}

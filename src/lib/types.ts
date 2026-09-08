@@ -17,10 +17,18 @@ export const AREA_LABELS: Record<Area, string> = {
 
 export const AREA_OPTIONS = Object.keys(AREA_LABELS) as Area[];
 
+export type Origin = "colegio" | "enem";
+
+export const ORIGIN_LABELS: Record<Origin, string> = {
+  colegio: "Colégio",
+  enem: "ENEM",
+};
+
 export interface Subject {
   id: string;
   name: string;
   area: Area;
+  origin: Origin;
   created_at: string;
 }
 

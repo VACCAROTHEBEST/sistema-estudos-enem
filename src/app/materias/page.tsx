@@ -2,11 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { AREA_LABELS, AREA_OPTIONS, type Area, type SubjectWithTopics } from "@/lib/types";
+import {
+  AREA_LABELS,
+  AREA_OPTIONS,
+  ORIGIN_LABELS,
+  type Area,
+  type Origin,
+  type SubjectWithTopics,
+} from "@/lib/types";
+
+const TABS: Origin[] = ["colegio", "enem"];
 
 export default function MateriasPage() {
   const [subjects, setSubjects] = useState<SubjectWithTopics[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<Origin>("colegio");
   const [showNew, setShowNew] = useState(false);
   const [newName, setNewName] = useState("");
   const [newArea, setNewArea] = useState<Area>("outra");
@@ -27,7 +37,7 @@ export default function MateriasPage() {
   async function addSubject(e: React.FormEvent) {
     e.preventDefault();
     if (!newName.trim()) return;
-    await supabase.from("subjects").insert({ name: newName.trim(), area: newArea });
+    await supabase.from("subjects").insert({ name: newName.trim(), area: newArea, origin: tab });
     setNewName("");
     setNewArea("outra");
     setShowNew(false);
@@ -57,7 +67,8 @@ export default function MateriasPage() {
     load();
   }
 
-  const sorted = [...subjects].sort((a, b) => {
+  const filtered = subjects.filter((s) => s.origin === tab);
+  const sorted = [...filtered].sort((a, b) => {
     const pa = a.topics.filter((t) => !t.done).length;
     const pb = b.topics.filter((t) => !t.done).length;
     if (pb !== pa) return pb - pa;
@@ -83,11 +94,34 @@ export default function MateriasPage() {
         </button>
       </header>
 
+      <div className="flex gap-1 border-b border-neutral-200">
+        {TABS.map((t) => {
+          const count = subjects.filter((s) => s.origin === t).length;
+          const active = tab === t;
+          return (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`relative px-4 py-2 text-sm font-semibold transition-colors ${
+                active ? "text-blue-700" : "text-neutral-400 hover:text-neutral-700"
+              }`}
+            >
+              {ORIGIN_LABELS[t]}
+              <span className="ml-1.5 font-mono text-xs text-neutral-400">{count}</span>
+              {active && <span className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-blue-700" />}
+            </button>
+          );
+        })}
+      </div>
+
       {showNew && (
         <form
           onSubmit={addSubject}
           className="flex flex-wrap items-center gap-2 rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3"
         >
+          <span className="text-xs text-neutral-400">
+            Nova matéria em <b className="text-neutral-600">{ORIGIN_LABELS[tab]}</b>
+          </span>
           <input
             autoFocus
             value={newName}
@@ -115,6 +149,10 @@ export default function MateriasPage() {
 
       {loading ? (
         <p className="text-sm text-neutral-400">Carregando…</p>
+      ) : sorted.length === 0 ? (
+        <p className="rounded-lg border border-dashed border-neutral-200 px-4 py-6 text-center text-sm text-neutral-400">
+          Nenhuma matéria em {ORIGIN_LABELS[tab]} ainda.
+        </p>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {sorted.map((s) => {
