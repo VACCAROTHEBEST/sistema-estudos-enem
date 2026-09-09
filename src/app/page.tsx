@@ -40,7 +40,7 @@ export default function DashboardPage() {
 
   async function saveDates() {
     const value = { day1: draftDay1, day2: draftDay2 };
-    await supabase.from("config").upsert({ key: "enem_dates", value });
+    await supabase.from("config").upsert({ key: "enem_dates", value }, { onConflict: "user_id,key" });
     setEnem(value);
     setEditingDates(false);
   }

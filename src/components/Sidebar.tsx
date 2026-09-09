@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
 const NAV = [
   {
@@ -42,8 +43,14 @@ const NAV = [
   },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ userEmail }: { userEmail: string | null }) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    router.replace("/login");
+  }
 
   return (
     <aside className="flex h-screen w-60 shrink-0 flex-col border-r border-neutral-200 bg-white sticky top-0">
@@ -87,6 +94,20 @@ export default function Sidebar() {
           );
         })}
       </nav>
+
+      <div className="border-t border-neutral-100 px-5 py-4">
+        {userEmail && (
+          <p className="mb-2 truncate text-xs text-neutral-500" title={userEmail}>
+            {userEmail}
+          </p>
+        )}
+        <button
+          onClick={handleLogout}
+          className="text-xs font-medium text-neutral-400 underline decoration-dotted underline-offset-2 hover:text-red-600"
+        >
+          Sair
+        </button>
+      </div>
 
       <div className="border-t border-neutral-100 px-5 py-5 text-xs leading-relaxed text-neutral-400">
         Colégio Chromos · F3D 2026
