@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { ETAPAS } from "@/lib/types";
 
 const NAV = [
   {
@@ -65,32 +66,55 @@ export default function Sidebar({ userEmail }: { userEmail: string | null }) {
 
       <nav className="flex-1 space-y-1 px-3">
         {NAV.map((item) => {
-          const active = pathname === item.href;
+          const isNotas = item.href === "/notas";
+          const active = pathname === item.href || (isNotas && pathname.startsWith("/notas"));
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                active
-                  ? "bg-blue-50 text-blue-700"
-                  : "text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900"
-              }`}
-            >
-              <svg
-                width="17"
-                height="17"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="shrink-0"
+            <div key={item.href}>
+              <Link
+                href={item.href}
+                className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  active
+                    ? "bg-blue-50 text-blue-700"
+                    : "text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900"
+                }`}
               >
-                {item.icon}
-              </svg>
-              {item.label}
-            </Link>
+                <svg
+                  width="17"
+                  height="17"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="shrink-0"
+                >
+                  {item.icon}
+                </svg>
+                {item.label}
+              </Link>
+              {isNotas && pathname.startsWith("/notas") && (
+                <div className="ml-[27px] mt-1 space-y-0.5 border-l border-neutral-100 pl-3">
+                  {ETAPAS.map((et) => {
+                    const href = `/notas/${et.n}`;
+                    const subActive = pathname === href;
+                    return (
+                      <Link
+                        key={et.n}
+                        href={href}
+                        className={`block rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
+                          subActive
+                            ? "bg-blue-50 text-blue-700"
+                            : "text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800"
+                        }`}
+                      >
+                        {et.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           );
         })}
       </nav>

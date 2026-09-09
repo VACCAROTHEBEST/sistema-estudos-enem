@@ -4,7 +4,16 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { daysUntil, fmtDate, todayLong, weekday } from "@/lib/dates";
-import { AREA_LABELS, ORIGIN_LABELS, type EnemDates, type Exam, type Grade, type SubjectWithTopics } from "@/lib/types";
+import { mediaDaEtapa, mediaGeral } from "@/lib/grades";
+import {
+  AREA_LABELS,
+  ETAPAS,
+  ORIGIN_LABELS,
+  type EnemDates,
+  type Exam,
+  type Grade,
+  type SubjectWithTopics,
+} from "@/lib/types";
 
 const DEFAULT_ENEM: EnemDates = { day1: "2026-11-08", day2: "2026-11-15" };
 
@@ -14,9 +23,6 @@ export default function DashboardPage() {
   const [grades, setGrades] = useState<Grade[]>([]);
   const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingDates, setEditingDates] = useState(false);
-  const [draftDay1, setDraftDay1] = useState(DEFAULT_ENEM.day1);
-  const [draftDay2, setDraftDay2] = useState(DEFAULT_ENEM.day2);
 
   async function load() {
     const [{ data: cfg }, { data: subs }, { data: gr }, { data: ex }] = await Promise.all([
@@ -38,13 +44,6 @@ export default function DashboardPage() {
     load();
   }, []);
 
-  async function saveDates() {
-    const value = { day1: draftDay1, day2: draftDay2 };
-    await supabase.from("config").upsert({ key: "enem_dates", value }, { onConflict: "user_id,key" });
-    setEnem(value);
-    setEditingDates(false);
-  }
-
   const pendingBySubject = subjects.map((s) => ({
     ...s,
     open: s.topics.filter((t) => !t.done).length,
@@ -55,10 +54,29 @@ export default function DashboardPage() {
     .filter((e) => daysUntil(e.exam_date) >= 0)
     .sort((a, b) => a.exam_date.localeCompare(b.exam_date));
   const nextExam = upcomingExams[0];
-  const avg = grades.length ? grades.reduce((s, g) => s + Number(g.value), 0) / grades.length : null;
+  const avg = mediaGeral(grades);
   const topPending = pendingBySubject
     .filter((s) => s.open > 0)
     .sort((a, b) => b.open - a.open)
+    .slice(0, 5);
+
+  const colegioTopics = subjects.filter((s) => s.origin === "colegio").flatMap((s) => s.topics);
+  const enemTopics = subjects.filter((s) => s.origin === "enem").flatMap((s) => s.topics);
+  const pctDone = (topics: { done: boolean }[]) =>
+    topics.length ? (topics.filter((t) => t.done).length / topics.length) * 100 : 0;
+
+  const proximasProvas = [
+    { title: "ENEM — Dia 1", subject: "Linguagens · Humanas · Redação", exam_date: enem.day1, tag: "ENEM" },
+    { title: "ENEM — Dia 2", subject: "Natureza · Matemática", exam_date: enem.day2, tag: "ENEM" },
+    ...exams.map((e) => ({ title: e.title, subject: e.subject, exam_date: e.exam_date, tag: null as string | null })),
+  ]
+    .filter((e) => daysUntil(e.exam_date) >= 0)
+    .sort((a, b) => a.exam_date.localeCompare(b.exam_date))
+    .slice(0, 4);
+
+  const notasRecentes = [...grades]
+    .filter((g) => g.grade_date)
+    .sort((a, b) => (b.grade_date ?? "").localeCompare(a.grade_date ?? ""))
     .slice(0, 5);
 
   return (
@@ -76,53 +94,9 @@ export default function DashboardPage() {
       </header>
 
       {/* hero: contagem regressiva ENEM */}
-      <section>
-        <div className="mb-2 flex justify-end">
-          <button
-            onClick={() => {
-              setDraftDay1(enem.day1);
-              setDraftDay2(enem.day2);
-              setEditingDates((v) => !v);
-            }}
-            className="text-xs font-medium text-neutral-400 underline decoration-dotted underline-offset-2 hover:text-neutral-700"
-          >
-            editar datas do ENEM
-          </button>
-        </div>
-
-        {editingDates && (
-          <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3">
-            <label className="flex items-center gap-2 text-xs text-neutral-500">
-              Dia 1
-              <input
-                type="date"
-                value={draftDay1}
-                onChange={(e) => setDraftDay1(e.target.value)}
-                className="rounded border border-neutral-300 px-2 py-1 text-sm text-neutral-800"
-              />
-            </label>
-            <label className="flex items-center gap-2 text-xs text-neutral-500">
-              Dia 2
-              <input
-                type="date"
-                value={draftDay2}
-                onChange={(e) => setDraftDay2(e.target.value)}
-                className="rounded border border-neutral-300 px-2 py-1 text-sm text-neutral-800"
-              />
-            </label>
-            <button
-              onClick={saveDates}
-              className="rounded-md bg-blue-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-800"
-            >
-              Salvar
-            </button>
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <EnemCard label="ENEM · Dia 1" date={enem.day1} areas={["Linguagens", "Ciências Humanas", "Redação"]} />
-          <EnemCard label="ENEM · Dia 2" date={enem.day2} areas={["Ciências da Natureza", "Matemática"]} />
-        </div>
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <EnemCard label="ENEM · Dia 1" date={enem.day1} areas={["Linguagens", "Ciências Humanas", "Redação"]} />
+        <EnemCard label="ENEM · Dia 2" date={enem.day2} areas={["Ciências da Natureza", "Matemática"]} />
       </section>
 
       {/* stats */}
@@ -137,41 +111,158 @@ export default function DashboardPage() {
         <Stat num={avg === null ? "—" : avg.toFixed(1)} cap="média geral" mono />
       </section>
 
-      {/* matérias com mais pendências */}
-      <section>
-        <div className="mb-3 flex items-baseline justify-between">
-          <h2 className="font-[var(--font-display)] text-lg font-semibold text-neutral-900">
-            Prioridades agora
-          </h2>
-          <Link href="/materias" className="text-xs font-medium text-blue-700 hover:underline">
-            ver todas as matérias →
-          </Link>
+      {/* média por etapa + progresso do edital */}
+      <section className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
+          <div className="mb-3 flex items-baseline justify-between">
+            <h2 className="text-sm font-semibold text-neutral-800">Média por etapa</h2>
+            <Link href="/notas" className="text-xs font-medium text-blue-700 hover:underline">
+              ver notas →
+            </Link>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {ETAPAS.map((et) => {
+              const m = mediaDaEtapa(grades, et.n);
+              return (
+                <Link
+                  key={et.n}
+                  href={`/notas/${et.n}`}
+                  className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-center hover:bg-neutral-100"
+                >
+                  <p className="font-mono text-lg font-semibold text-neutral-800">{m !== null ? m.toFixed(1) : "—"}</p>
+                  <p className="text-[11px] text-neutral-400">{et.label}</p>
+                </Link>
+              );
+            })}
+          </div>
         </div>
 
-        {loading ? (
-          <p className="text-sm text-neutral-400">Carregando…</p>
-        ) : topPending.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-neutral-200 px-4 py-6 text-center text-sm text-neutral-400">
-            Nenhuma pendência registrada — tudo em dia por aqui.
-          </p>
-        ) : (
-          <div className="divide-y divide-neutral-100 rounded-lg border border-neutral-200">
-            {topPending.map((s) => (
-              <div key={s.id} className="flex items-center justify-between px-4 py-3">
+        <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
+          <div className="mb-3 flex items-baseline justify-between">
+            <h2 className="text-sm font-semibold text-neutral-800">Progresso do edital</h2>
+            <Link href="/materias" className="text-xs font-medium text-blue-700 hover:underline">
+              ver matérias →
+            </Link>
+          </div>
+          <div className="space-y-3">
+            <ProgressBar label={ORIGIN_LABELS.colegio} pct={pctDone(colegioTopics)} />
+            <ProgressBar label={ORIGIN_LABELS.enem} pct={pctDone(enemTopics)} />
+          </div>
+        </div>
+      </section>
+
+      <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* matérias com mais pendências */}
+        <div>
+          <div className="mb-3 flex items-baseline justify-between">
+            <h2 className="font-[var(--font-display)] text-lg font-semibold text-neutral-900">
+              Prioridades agora
+            </h2>
+            <Link href="/materias" className="text-xs font-medium text-blue-700 hover:underline">
+              ver todas as matérias →
+            </Link>
+          </div>
+
+          {loading ? (
+            <p className="text-sm text-neutral-400">Carregando…</p>
+          ) : topPending.length === 0 ? (
+            <p className="rounded-lg border border-dashed border-neutral-200 px-4 py-6 text-center text-sm text-neutral-400">
+              Nenhuma pendência registrada — tudo em dia por aqui.
+            </p>
+          ) : (
+            <div className="divide-y divide-neutral-100 rounded-lg border border-neutral-200">
+              {topPending.map((s) => (
+                <div key={s.id} className="flex items-center justify-between px-4 py-3">
+                  <div>
+                    <p className="text-sm font-medium text-neutral-800">{s.name}</p>
+                    <p className="text-xs text-neutral-400">
+                      {ORIGIN_LABELS[s.origin]} · {AREA_LABELS[s.area]}
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-amber-50 px-2.5 py-0.5 font-mono text-xs font-semibold text-amber-700">
+                    {s.open} pendente{s.open === 1 ? "" : "s"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* próximas provas */}
+        <div>
+          <div className="mb-3 flex items-baseline justify-between">
+            <h2 className="font-[var(--font-display)] text-lg font-semibold text-neutral-900">
+              Próximas provas
+            </h2>
+            <Link href="/provas" className="text-xs font-medium text-blue-700 hover:underline">
+              ver todas →
+            </Link>
+          </div>
+
+          {loading ? (
+            <p className="text-sm text-neutral-400">Carregando…</p>
+          ) : proximasProvas.length === 0 ? (
+            <p className="rounded-lg border border-dashed border-neutral-200 px-4 py-6 text-center text-sm text-neutral-400">
+              Nenhuma prova agendada.
+            </p>
+          ) : (
+            <div className="divide-y divide-neutral-100 rounded-lg border border-neutral-200">
+              {proximasProvas.map((e, i) => {
+                const d = daysUntil(e.exam_date);
+                return (
+                  <div key={i} className="flex items-center gap-3 px-4 py-3">
+                    <span className="w-12 shrink-0 rounded-lg bg-blue-50 px-2 py-1 text-center font-mono text-xs font-semibold text-blue-700">
+                      {d === 0 ? "hoje" : `${d}d`}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-neutral-800">
+                        {e.tag && (
+                          <span className="mr-2 rounded bg-blue-50 px-1.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-blue-700">
+                            {e.tag}
+                          </span>
+                        )}
+                        {e.title}
+                      </p>
+                      <p className="truncate text-xs text-neutral-400">
+                        {e.subject ? `${e.subject} · ` : ""}
+                        {weekday(e.exam_date)}, {fmtDate(e.exam_date)}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* notas recentes */}
+      {notasRecentes.length > 0 && (
+        <section>
+          <div className="mb-3 flex items-baseline justify-between">
+            <h2 className="font-[var(--font-display)] text-lg font-semibold text-neutral-900">Notas recentes</h2>
+            <Link href="/notas" className="text-xs font-medium text-blue-700 hover:underline">
+              ver todas as notas →
+            </Link>
+          </div>
+          <div className="divide-y divide-neutral-100 rounded-lg border border-neutral-200 bg-white">
+            {notasRecentes.map((g) => (
+              <div key={g.id} className="flex items-center justify-between px-4 py-2.5">
                 <div>
-                  <p className="text-sm font-medium text-neutral-800">{s.name}</p>
+                  <p className="text-sm font-medium text-neutral-800">{g.subject}</p>
                   <p className="text-xs text-neutral-400">
-                    {ORIGIN_LABELS[s.origin]} · {AREA_LABELS[s.area]}
+                    {g.term} · {g.tipo === "trabalho" ? "Trabalho" : "Prova"}
                   </p>
                 </div>
-                <span className="rounded-full bg-amber-50 px-2.5 py-0.5 font-mono text-xs font-semibold text-amber-700">
-                  {s.open} pendente{s.open === 1 ? "" : "s"}
-                </span>
+                <div className="text-right">
+                  <p className="font-mono text-sm font-semibold text-neutral-800">{Number(g.value).toFixed(1)}</p>
+                  <p className="text-[11px] text-neutral-400">{g.grade_date ? fmtDate(g.grade_date) : "—"}</p>
+                </div>
               </div>
             ))}
           </div>
-        )}
-      </section>
+        </section>
+      )}
     </div>
   );
 }
@@ -206,6 +297,20 @@ function Stat({ num, cap, mono }: { num: string | number; cap: string; mono?: bo
     <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3">
       <div className={`text-xl font-semibold ${mono ? "font-mono" : ""}`}>{num}</div>
       <div className="mt-0.5 text-xs text-neutral-500">{cap}</div>
+    </div>
+  );
+}
+
+function ProgressBar({ label, pct }: { label: string; pct: number }) {
+  return (
+    <div>
+      <div className="mb-1 flex items-center justify-between text-xs">
+        <span className="text-neutral-500">{label}</span>
+        <span className="font-mono font-semibold text-neutral-700">{pct.toFixed(0)}%</span>
+      </div>
+      <div className="h-2 overflow-hidden rounded-full bg-neutral-100">
+        <div className="h-full rounded-full bg-blue-600" style={{ width: `${Math.max(pct, 2)}%` }} />
+      </div>
     </div>
   );
 }

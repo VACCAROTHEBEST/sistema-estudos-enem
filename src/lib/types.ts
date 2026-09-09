@@ -55,6 +55,21 @@ export const TIPO_OPTIONS = Object.keys(TIPO_LABELS) as TipoAvaliacao[];
 
 export const ETAPA_OPTIONS = ["1ª Etapa", "2ª Etapa", "3ª Etapa"] as const;
 
+export interface EtapaInfo {
+  n: 1 | 2 | 3;
+  label: string;
+  term: string;
+  max: number;
+  provaMax: number;
+  trabalhoMax: number;
+}
+
+export const ETAPAS: EtapaInfo[] = [
+  { n: 1, label: "1ª Etapa", term: "1ª Etapa", max: 30, provaMax: 9, trabalhoMax: 3 },
+  { n: 2, label: "2ª Etapa", term: "2ª Etapa", max: 35, provaMax: 10, trabalhoMax: 5 },
+  { n: 3, label: "3ª Etapa", term: "3ª Etapa", max: 35, provaMax: 10, trabalhoMax: 5 },
+];
+
 // Extrai o número da etapa (1, 2 ou 3) de um texto livre como "1 etapa" ou "2ª Etapa".
 // Se não conseguir identificar, assume 2ª/3ª etapa (valor mais comum, 35 pontos).
 export function numeroDaEtapa(term: string): 1 | 2 | 3 {
