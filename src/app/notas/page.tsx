@@ -3,19 +3,27 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { fmtDate } from "@/lib/dates";
-import type { Grade } from "@/lib/types";
+import {
+  ETAPA_OPTIONS,
+  TIPO_LABELS,
+  TIPO_OPTIONS,
+  valorMaximo,
+  type Grade,
+  type TipoAvaliacao,
+} from "@/lib/types";
 
 export default function NotasPage() {
   const [grades, setGrades] = useState<Grade[]>([]);
   const [loading, setLoading] = useState(true);
   const [subject, setSubject] = useState("");
-  const [term, setTerm] = useState("");
+  const [term, setTerm] = useState<string>(ETAPA_OPTIONS[0]);
+  const [tipo, setTipo] = useState<TipoAvaliacao>("prova");
   const [value, setValue] = useState("");
   const [date, setDate] = useState("");
 
   async function load() {
     const { data } = await supabase.from("grades").select("*").order("grade_date", { ascending: false });
-    setGrades(data ?? []);
+    setGrades((data as Grade[]) ?? []);
     setLoading(false);
   }
 
@@ -32,11 +40,11 @@ export default function NotasPage() {
     await supabase.from("grades").insert({
       subject: subject.trim(),
       term: term.trim(),
+      tipo,
       value: v,
       grade_date: date || new Date().toISOString().slice(0, 10),
     });
     setSubject("");
-    setTerm("");
     setValue("");
     setDate("");
     load();
@@ -47,12 +55,17 @@ export default function NotasPage() {
     load();
   }
 
+  // Média geral permanece como média simples de todas as notas lançadas.
   const avg = grades.length ? grades.reduce((s, g) => s + Number(g.value), 0) / grades.length : null;
 
-  const bySubject = grades.reduce<Record<string, number[]>>((acc, g) => {
-    (acc[g.subject] ||= []).push(Number(g.value));
+  // Por matéria: soma das notas em vez de média, comparada ao total de pontos possível
+  // (1ª Etapa = 30 pts: 3 provas de 9 + 1 trabalho de 3; 2ª/3ª Etapa = 35 pts: 3 provas de 10 + 1 trabalho de 5).
+  const bySubject = grades.reduce<Record<string, Grade[]>>((acc, g) => {
+    (acc[g.subject] ||= []).push(g);
     return acc;
   }, {});
+
+  const currentMax = valorMaximo(term, tipo);
 
   return (
     <div className="space-y-6">
@@ -72,12 +85,24 @@ export default function NotasPage() {
 
       {Object.keys(bySubject).length > 0 && (
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {Object.entries(bySubject).map(([subj, values]) => {
-            const a = values.reduce((s, v) => s + v, 0) / values.length;
+          {Object.entries(bySubject).map(([subj, entries]) => {
+            const total = entries.reduce((s, g) => s + Number(g.value), 0);
+            const max = entries.reduce((s, g) => s + valorMaximo(g.term, g.tipo), 0);
+            const pct = max > 0 ? (total / max) * 100 : 0;
+            const tone =
+              pct < 60
+                ? "bg-red-50 border-red-200 text-red-700"
+                : pct <= 80
+                ? "bg-amber-50 border-amber-200 text-amber-700"
+                : "bg-emerald-50 border-emerald-200 text-emerald-700";
             return (
-              <div key={subj} className="rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3">
-                <div className="font-mono text-xl font-semibold text-neutral-800">{a.toFixed(1)}</div>
-                <div className="mt-0.5 truncate text-xs text-neutral-500">{subj}</div>
+              <div key={subj} className={`rounded-xl border px-4 py-3 ${tone}`}>
+                <div className="font-mono text-xl font-semibold">
+                  {total.toFixed(1)}
+                  <span className="ml-1 text-xs font-medium opacity-70">/ {max}</span>
+                </div>
+                <div className="mt-0.5 truncate text-xs opacity-80">{subj}</div>
+                <div className="font-mono text-[11px] font-semibold opacity-70">{pct.toFixed(0)}%</div>
               </div>
             );
           })}
@@ -91,6 +116,7 @@ export default function NotasPage() {
               <tr className="border-b border-neutral-200 text-left text-[11px] uppercase tracking-wide text-neutral-400">
                 <th className="px-4 py-3 font-semibold">Matéria</th>
                 <th className="px-4 py-3 font-semibold">Etapa</th>
+                <th className="px-4 py-3 font-semibold">Tipo</th>
                 <th className="px-4 py-3 font-semibold">Nota</th>
                 <th className="px-4 py-3 font-semibold">Data</th>
                 <th className="px-4 py-3"></th>
@@ -99,13 +125,13 @@ export default function NotasPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-6 text-center text-neutral-400">
+                  <td colSpan={6} className="px-4 py-6 text-center text-neutral-400">
                     Carregando…
                   </td>
                 </tr>
               ) : grades.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-6 text-center italic text-neutral-400">
+                  <td colSpan={6} className="px-4 py-6 text-center italic text-neutral-400">
                     Nenhuma nota lançada ainda.
                   </td>
                 </tr>
@@ -114,7 +140,11 @@ export default function NotasPage() {
                   <tr key={g.id} className="border-b border-neutral-100 last:border-0">
                     <td className="px-4 py-2.5">{g.subject}</td>
                     <td className="px-4 py-2.5 text-neutral-500">{g.term}</td>
-                    <td className="px-4 py-2.5 font-mono">{Number(g.value).toFixed(1)}</td>
+                    <td className="px-4 py-2.5 text-neutral-500">{TIPO_LABELS[g.tipo]}</td>
+                    <td className="px-4 py-2.5 font-mono">
+                      {Number(g.value).toFixed(1)}
+                      <span className="text-neutral-400"> / {valorMaximo(g.term, g.tipo)}</span>
+                    </td>
                     <td className="px-4 py-2.5 font-mono text-neutral-500">
                       {g.grade_date ? fmtDate(g.grade_date) : "—"}
                     </td>
@@ -130,7 +160,7 @@ export default function NotasPage() {
           </table>
         </div>
 
-        <form onSubmit={addGrade} className="grid grid-cols-2 gap-2 border-t border-neutral-200 p-4 sm:grid-cols-5">
+        <form onSubmit={addGrade} className="grid grid-cols-2 gap-2 border-t border-neutral-200 p-4 sm:grid-cols-6">
           <input
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
@@ -138,17 +168,32 @@ export default function NotasPage() {
             className="rounded border border-neutral-300 px-2.5 py-1.5 text-sm sm:col-span-2"
             required
           />
-          <input
+          <select
             value={term}
             onChange={(e) => setTerm(e.target.value)}
-            placeholder="Etapa (ex: 3º bim)"
             className="rounded border border-neutral-300 px-2.5 py-1.5 text-sm"
-            required
-          />
+          >
+            {ETAPA_OPTIONS.map((et) => (
+              <option key={et} value={et}>
+                {et}
+              </option>
+            ))}
+          </select>
+          <select
+            value={tipo}
+            onChange={(e) => setTipo(e.target.value as TipoAvaliacao)}
+            className="rounded border border-neutral-300 px-2.5 py-1.5 text-sm"
+          >
+            {TIPO_OPTIONS.map((t) => (
+              <option key={t} value={t}>
+                {TIPO_LABELS[t]}
+              </option>
+            ))}
+          </select>
           <input
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            placeholder="Nota (0–10)"
+            placeholder={`Nota (0–${currentMax})`}
             inputMode="decimal"
             className="rounded border border-neutral-300 px-2.5 py-1.5 text-sm"
             required

@@ -44,11 +44,40 @@ export interface SubjectWithTopics extends Subject {
   topics: Topic[];
 }
 
+export type TipoAvaliacao = "prova" | "trabalho";
+
+export const TIPO_LABELS: Record<TipoAvaliacao, string> = {
+  prova: "Prova",
+  trabalho: "Trabalho",
+};
+
+export const TIPO_OPTIONS = Object.keys(TIPO_LABELS) as TipoAvaliacao[];
+
+export const ETAPA_OPTIONS = ["1ª Etapa", "2ª Etapa", "3ª Etapa"] as const;
+
+// Extrai o número da etapa (1, 2 ou 3) de um texto livre como "1 etapa" ou "2ª Etapa".
+// Se não conseguir identificar, assume 2ª/3ª etapa (valor mais comum, 35 pontos).
+export function numeroDaEtapa(term: string): 1 | 2 | 3 {
+  const match = term.match(/[123]/);
+  if (match?.[0] === "1") return 1;
+  if (match?.[0] === "3") return 3;
+  return 2;
+}
+
+// Valor máximo de uma avaliação: 1ª Etapa vale 30 (3 provas de 9 + 1 trabalho de 3);
+// 2ª e 3ª Etapa valem 35 (3 provas de 10 + 1 trabalho de 5).
+export function valorMaximo(term: string, tipo: TipoAvaliacao): number {
+  const etapa = numeroDaEtapa(term);
+  if (tipo === "trabalho") return etapa === 1 ? 3 : 5;
+  return etapa === 1 ? 9 : 10;
+}
+
 export interface Grade {
   id: string;
   subject: string;
   term: string;
   value: number;
+  tipo: TipoAvaliacao;
   grade_date: string | null;
   created_at: string;
 }
