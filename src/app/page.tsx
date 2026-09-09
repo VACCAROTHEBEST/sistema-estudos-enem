@@ -181,7 +181,7 @@ function EnemCard({ label, date, areas }: { label: string; date: string; areas: 
   return (
     <div className="rounded-2xl border border-neutral-200 border-t-[3px] border-t-blue-700 bg-white px-6 py-5 shadow-sm">
       <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-neutral-400">{label}</p>
-      <p className="font-digital mt-1 text-4xl font-semibold leading-none text-blue-700">
+      <p className="mt-1 font-mono text-4xl font-semibold leading-none text-blue-700">
         {d > 0 ? d : d === 0 ? "🎯" : "—"}
         {d > 0 && <span className="ml-1.5 font-sans text-sm font-medium text-neutral-400">dias</span>}
         {d === 0 && <span className="ml-2 font-sans text-sm font-medium text-neutral-400">é hoje</span>}
@@ -204,7 +204,7 @@ function EnemCard({ label, date, areas }: { label: string; date: string; areas: 
 function Stat({ num, cap, mono }: { num: string | number; cap: string; mono?: boolean }) {
   return (
     <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3">
-      <div className={`text-xl font-semibold ${mono ? "font-digital" : ""}`}>{num}</div>
+      <div className={`text-xl font-semibold ${mono ? "font-mono" : ""}`}>{num}</div>
       <div className="mt-0.5 text-xs text-neutral-500">{cap}</div>
     </div>
   );

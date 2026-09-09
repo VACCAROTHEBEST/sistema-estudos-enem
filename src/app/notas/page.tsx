@@ -55,15 +55,32 @@ export default function NotasPage() {
     load();
   }
 
-  // Média geral permanece como média simples de todas as notas lançadas.
-  const avg = grades.length ? grades.reduce((s, g) => s + Number(g.value), 0) / grades.length : null;
-
-  // Por matéria: soma das notas em vez de média, comparada ao total de pontos possível
+  // Por matéria + etapa: soma das notas em vez de média, comparada ao total de pontos possível
   // (1ª Etapa = 30 pts: 3 provas de 9 + 1 trabalho de 3; 2ª/3ª Etapa = 35 pts: 3 provas de 10 + 1 trabalho de 5).
   const bySubject = grades.reduce<Record<string, Grade[]>>((acc, g) => {
     (acc[g.subject] ||= []).push(g);
     return acc;
   }, {});
+
+  const bySubjectEtapa = grades.reduce<Record<string, Grade[]>>((acc, g) => {
+    (acc[`${g.subject}__${g.term}`] ||= []).push(g);
+    return acc;
+  }, {});
+
+  // Média geral = média das notas finais de cada matéria ao término da etapa
+  // (soma das provas + trabalho da etapa, convertida para escala 0–10), não a
+  // média das notas de prova avulsas.
+  const notasFinaisDeEtapa = Object.values(bySubjectEtapa)
+    .map((entries) => {
+      const total = entries.reduce((s, g) => s + Number(g.value), 0);
+      const max = entries.reduce((s, g) => s + valorMaximo(g.term, g.tipo), 0);
+      return max > 0 ? (total / max) * 10 : null;
+    })
+    .filter((n): n is number => n !== null);
+
+  const avg = notasFinaisDeEtapa.length
+    ? notasFinaisDeEtapa.reduce((s, n) => s + n, 0) / notasFinaisDeEtapa.length
+    : null;
 
   const currentMax = valorMaximo(term, tipo);
 
@@ -77,9 +94,8 @@ export default function NotasPage() {
           </h1>
         </div>
         {avg !== null && (
-          <p className="text-sm text-neutral-500">
-            média geral{" "}
-            <span className="font-digital text-lg font-semibold text-blue-700">{avg.toFixed(1)}</span>
+          <p className="font-mono text-sm text-neutral-500">
+            média geral <span className="text-lg font-semibold text-blue-700">{avg.toFixed(1)}</span>
           </p>
         )}
       </header>
@@ -98,12 +114,12 @@ export default function NotasPage() {
                 : "bg-emerald-600 border-emerald-700 text-white";
             return (
               <div key={subj} className={`rounded-xl border px-4 py-3 ${tone}`}>
-                <div className="font-digital text-xl font-semibold">
+                <div className="font-mono text-xl font-semibold">
                   {total.toFixed(1)}
                   <span className="ml-1 text-xs font-medium opacity-80">/ {max}</span>
                 </div>
                 <div className="mt-0.5 truncate text-xs opacity-90">{subj}</div>
-                <div className="font-digital text-[11px] font-semibold opacity-80">{pct.toFixed(0)}%</div>
+                <div className="font-mono text-[11px] font-semibold opacity-80">{pct.toFixed(0)}%</div>
               </div>
             );
           })}
@@ -142,7 +158,7 @@ export default function NotasPage() {
                     <td className="px-4 py-2.5">{g.subject}</td>
                     <td className="px-4 py-2.5 text-neutral-500">{g.term}</td>
                     <td className="px-4 py-2.5 text-neutral-500">{TIPO_LABELS[g.tipo]}</td>
-                    <td className="px-4 py-2.5 font-digital">
+                    <td className="px-4 py-2.5 font-mono">
                       {Number(g.value).toFixed(1)}
                       <span className="text-neutral-400"> / {valorMaximo(g.term, g.tipo)}</span>
                     </td>

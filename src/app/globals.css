@@ -1,14 +1,5 @@
 @import "tailwindcss";
 
-@font-face {
-  font-family: "DSEG7Classic";
-  src: url("/fonts/DSEG7-Classic-Bold.woff2") format("woff2"),
-    url("/fonts/DSEG7-Classic-Bold.woff") format("woff");
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
 :root {
   --background: #ffffff;
   --foreground: #1c1f28;
@@ -33,10 +24,4 @@ body {
 
 ::selection {
   background: #dbe7fb;
-}
-
-.font-digital {
-  font-family: "DSEG7Classic", var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.02em;
 }
