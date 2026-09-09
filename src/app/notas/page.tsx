@@ -77,8 +77,9 @@ export default function NotasPage() {
           </h1>
         </div>
         {avg !== null && (
-          <p className="font-mono text-sm text-neutral-500">
-            média geral <span className="text-lg font-semibold text-blue-700">{avg.toFixed(1)}</span>
+          <p className="text-sm text-neutral-500">
+            média geral{" "}
+            <span className="font-digital text-lg font-semibold text-blue-700">{avg.toFixed(1)}</span>
           </p>
         )}
       </header>
@@ -91,18 +92,18 @@ export default function NotasPage() {
             const pct = max > 0 ? (total / max) * 100 : 0;
             const tone =
               pct < 60
-                ? "bg-red-50 border-red-200 text-red-700"
+                ? "bg-red-600 border-red-700 text-white"
                 : pct <= 80
-                ? "bg-amber-50 border-amber-200 text-amber-700"
-                : "bg-emerald-50 border-emerald-200 text-emerald-700";
+                ? "bg-amber-400 border-amber-500 text-amber-950"
+                : "bg-emerald-600 border-emerald-700 text-white";
             return (
               <div key={subj} className={`rounded-xl border px-4 py-3 ${tone}`}>
-                <div className="font-mono text-xl font-semibold">
+                <div className="font-digital text-xl font-semibold">
                   {total.toFixed(1)}
-                  <span className="ml-1 text-xs font-medium opacity-70">/ {max}</span>
+                  <span className="ml-1 text-xs font-medium opacity-80">/ {max}</span>
                 </div>
-                <div className="mt-0.5 truncate text-xs opacity-80">{subj}</div>
-                <div className="font-mono text-[11px] font-semibold opacity-70">{pct.toFixed(0)}%</div>
+                <div className="mt-0.5 truncate text-xs opacity-90">{subj}</div>
+                <div className="font-digital text-[11px] font-semibold opacity-80">{pct.toFixed(0)}%</div>
               </div>
             );
           })}
@@ -141,7 +142,7 @@ export default function NotasPage() {
                     <td className="px-4 py-2.5">{g.subject}</td>
                     <td className="px-4 py-2.5 text-neutral-500">{g.term}</td>
                     <td className="px-4 py-2.5 text-neutral-500">{TIPO_LABELS[g.tipo]}</td>
-                    <td className="px-4 py-2.5 font-mono">
+                    <td className="px-4 py-2.5 font-digital">
                       {Number(g.value).toFixed(1)}
                       <span className="text-neutral-400"> / {valorMaximo(g.term, g.tipo)}</span>
                     </td>

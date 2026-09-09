@@ -107,7 +107,7 @@ export default function MateriasPage() {
               }`}
             >
               {ORIGIN_LABELS[t]}
-              <span className="ml-1.5 font-mono text-xs text-neutral-400">{count}</span>
+              <span className="font-digital ml-1.5 text-xs text-neutral-400">{count}</span>
               {active && <span className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-blue-700" />}
             </button>
           );
