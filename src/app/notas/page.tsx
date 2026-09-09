@@ -67,16 +67,12 @@ export default function NotasPage() {
     return acc;
   }, {});
 
-  // Média geral = média das notas finais de cada matéria ao término da etapa
-  // (soma das provas + trabalho da etapa, convertida para escala 0–10), não a
+  // Média geral = nota final da etapa de cada matéria (soma das provas + trabalho)
+  // somada entre as matérias e dividida pela quantidade de matérias — não a
   // média das notas de prova avulsas.
-  const notasFinaisDeEtapa = Object.values(bySubjectEtapa)
-    .map((entries) => {
-      const total = entries.reduce((s, g) => s + Number(g.value), 0);
-      const max = entries.reduce((s, g) => s + valorMaximo(g.term, g.tipo), 0);
-      return max > 0 ? (total / max) * 10 : null;
-    })
-    .filter((n): n is number => n !== null);
+  const notasFinaisDeEtapa = Object.values(bySubjectEtapa).map((entries) =>
+    entries.reduce((s, g) => s + Number(g.value), 0)
+  );
 
   const avg = notasFinaisDeEtapa.length
     ? notasFinaisDeEtapa.reduce((s, n) => s + n, 0) / notasFinaisDeEtapa.length
