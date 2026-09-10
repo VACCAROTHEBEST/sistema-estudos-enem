@@ -42,6 +42,15 @@ const NAV = [
       </>
     ),
   },
+  {
+    href: "/conteudo-provas",
+    label: "Conteúdo das provas",
+    icon: (
+      <>
+        <path d="M9 11.5 11 13.5 15.5 9M5 5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5Z" />
+      </>
+    ),
+  },
 ];
 
 export default function Sidebar({ userEmail }: { userEmail: string | null }) {
