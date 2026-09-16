@@ -9,6 +9,7 @@ import Sidebar from "@/components/Sidebar";
 export default function AuthGate({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
@@ -52,10 +53,22 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen">
-      <Sidebar userEmail={session.user.email ?? null} />
-      <main className="min-w-0 flex-1">
-        <div className="mx-auto max-w-5xl px-8 py-9">{children}</div>
-      </main>
+      <Sidebar userEmail={session.user.email ?? null} open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <div className="min-w-0 flex-1">
+        <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-neutral-200 bg-white px-4 py-3 md:hidden">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Abrir menu"
+            className="rounded-md p-1.5 text-neutral-600 hover:bg-neutral-50"
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+              <path d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <span className="font-[var(--font-display)] text-base font-semibold text-neutral-900">ENEM 2026</span>
+        </header>
+        <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 md:px-8 md:py-9">{children}</main>
+      </div>
     </div>
   );
 }
