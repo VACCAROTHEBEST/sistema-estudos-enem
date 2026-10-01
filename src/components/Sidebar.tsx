@@ -51,6 +51,16 @@ const NAV = [
       </>
     ),
   },
+  {
+    href: "/simulados",
+    label: "Simulados",
+    icon: (
+      <>
+        <circle cx="12" cy="12" r="9" />
+        <path d="M9 10h.01M15 10h.01M8.5 15c1 1 2.2 1.5 3.5 1.5s2.5-.5 3.5-1.5" />
+      </>
+    ),
+  },
 ];
 
 export default function Sidebar({

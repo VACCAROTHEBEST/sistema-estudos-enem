@@ -110,3 +110,15 @@ export interface EnemDates {
   day1: string;
   day2: string;
 }
+
+export interface Question {
+  id: string;
+  subject_id: string | null;
+  topic_id: string | null;
+  statement: string;
+  alternatives: string[];
+  correct_index: number;
+  explanation: string | null;
+  source: string | null;
+  created_at: string;
+}
